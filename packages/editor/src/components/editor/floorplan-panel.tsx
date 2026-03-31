@@ -12,6 +12,7 @@ import {
   type LevelNode,
   loadAssetUrl,
   type Point2D,
+  RackNode,
   type SiteNode,
   SlabNode,
   useScene,
@@ -185,7 +186,7 @@ type FloorplanCursorIndicator =
       icon: string
     }
 
-const FLOORPLAN_QUICK_BUILD_TOOL_IDS = ['wall', 'door', 'window', 'slab', 'zone'] as const
+const FLOORPLAN_QUICK_BUILD_TOOL_IDS = ['wall', 'door', 'window', 'slab', 'zone', 'rack'] as const
 
 type FloorplanQuickBuildTool = (typeof FLOORPLAN_QUICK_BUILD_TOOL_IDS)[number]
 
@@ -195,6 +196,7 @@ const FLOORPLAN_QUICK_BUILD_TOOL_LABELS: Record<FloorplanQuickBuildTool, string>
   window: 'Window',
   slab: 'Floor',
   zone: 'Zone',
+  rack: 'Rack',
 }
 
 const FLOORPLAN_QUICK_BUILD_TOOL_FALLBACK_ICONS: Record<FloorplanQuickBuildTool, string> = {
@@ -203,6 +205,7 @@ const FLOORPLAN_QUICK_BUILD_TOOL_FALLBACK_ICONS: Record<FloorplanQuickBuildTool,
   window: '/icons/window.png',
   slab: '/icons/floor.png',
   zone: '/icons/zone.png',
+  rack: '/icons/rack.png',
 }
 
 const FLOORPLAN_QUICK_BUILD_TOOLS = FLOORPLAN_QUICK_BUILD_TOOL_IDS.map((id) => {
@@ -293,6 +296,17 @@ type SlabBoundaryDraft = {
   polygon: WallPlanPoint[]
 }
 
+type RackTransformMode = 'translate' | 'rotate'
+
+type RackTransformInteraction = {
+  pointerId: number
+  rackId: RackNode['id']
+  mode: RackTransformMode
+  initialPosition: WallPlanPoint
+  initialRotation: number
+  startPlanPoint: WallPlanPoint
+}
+
 type SlabVertexDragState = {
   pointerId: number
   slabId: SlabNode['id']
@@ -350,6 +364,19 @@ type ZonePolygonEntry = {
   zone: ZoneNodeType
   polygon: Point2D[]
   points: string
+}
+
+type RackPolygonEntry = {
+  rack: RackNode
+  polygon: Point2D[]
+  points: string
+  bays: Array<{
+    polygon: Point2D[]
+    x: number
+    z: number
+    width: number
+    depth: number
+  }>
 }
 
 type FloorplanPalette = {
@@ -850,6 +877,118 @@ function doesPolygonIntersectSelectionBounds(polygon: Point2D[], bounds: Floorpl
   return false
 }
 
+type RackMeasurementOverlay = {
+  rackId: string
+  dimensionLine: {
+    x1: number
+    y1: number
+    x2: number
+    y2: number
+  }
+  label: string
+  labelX: number
+  labelY: number
+  labelAngleDeg: number
+}
+
+type WallMeasurementOverlay = {
+  wallId: WallNode['id']
+  dimensionLineEnd: { x1: number; y1: number; x2: number; y2: number }
+  dimensionLineStart: { x1: number; y1: number; x2: number; y2: number }
+  extensionStart: { x1: number; y1: number; x2: number; y2: number }
+  extensionEnd: { x1: number; y1: number; x2: number; y2: number }
+  label: string
+  labelX: number
+  labelY: number
+  labelAngleDeg: number
+  isSelected?: boolean
+}
+
+function getRackMeasurementOverlays(
+  rack: RackNode,
+  unit: 'metric' | 'imperial',
+): RackMeasurementOverlay[] {
+  const {
+    unitWidth = 2.7,
+    unitDepth = 1.1,
+    config = [1],
+    backToBack = true,
+    backToBackGap = 0.2,
+  } = rack
+
+  const [ox, , oz] = rack.position
+  const [, rotY] = rack.rotation
+  const angle = rotY
+
+  // Calculate overall dimensions
+  const maxBays = Math.max(...config)
+  const totalWidth = maxBays * unitWidth
+  const totalDepth = backToBack ? unitDepth * 2 + backToBackGap : unitDepth
+
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+
+  const overlays: RackMeasurementOverlay[] = []
+
+  // Horizontal dimension (Width)
+  const wX1 = -totalWidth / 2
+  const wZ1 = totalDepth / 2 + 0.4
+  const wX2 = totalWidth / 2
+  const wZ2 = totalDepth / 2 + 0.4
+
+  const swX1 = ox + (wX1 * cos - wZ1 * sin)
+  const swZ1 = oz + (wX1 * sin + wZ1 * cos)
+  const swX2 = ox + (wX2 * cos - wZ2 * sin)
+  const swZ2 = oz + (wX2 * sin + wZ2 * cos)
+
+  const wLabel = formatMeasurement(totalWidth, unit)
+  const wAngle = angle * (180 / Math.PI)
+
+  overlays.push({
+    rackId: rack.id,
+    dimensionLine: {
+      x1: toSvgX(swX1),
+      y1: toSvgY(swZ1),
+      x2: toSvgX(swX2),
+      y2: toSvgY(swZ2),
+    },
+    label: wLabel,
+    labelX: toSvgX((swX1 + swX2) / 2),
+    labelY: toSvgY((swZ1 + swZ2) / 2),
+    labelAngleDeg: wAngle,
+  })
+
+  // Vertical dimension (Depth)
+  const dX1 = totalWidth / 2 + 0.4
+  const dZ1 = -totalDepth / 2
+  const dX2 = totalWidth / 2 + 0.4
+  const dZ2 = totalDepth / 2
+
+  const sdX1 = ox + (dX1 * cos - dZ1 * sin)
+  const sdZ1 = oz + (dX1 * sin + dZ1 * cos)
+  const sdX2 = ox + (dX2 * cos - dZ2 * sin)
+  const sdZ2 = oz + (dX2 * sin + dZ2 * cos)
+
+  const dLabel = formatMeasurement(totalDepth, unit)
+  const dAngle = wAngle + 90
+
+  overlays.push({
+    rackId: rack.id,
+    dimensionLine: {
+      x1: toSvgX(sdX1),
+      y1: toSvgY(sdZ1),
+      x2: toSvgX(sdX2),
+      y2: toSvgY(sdZ2),
+    },
+    label: dLabel,
+    labelX: toSvgX((sdX1 + sdX2) / 2),
+    labelY: toSvgY((sdZ1 + sdZ2) / 2),
+    labelAngleDeg: dAngle,
+  })
+
+  return overlays
+}
+
 function getDistanceToWallSegment(point: Point2D, start: WallPlanPoint, end: WallPlanPoint) {
   const dx = end[0] - start[0]
   const dy = end[1] - start[1]
@@ -1289,18 +1428,7 @@ function getFloorplanWall(wall: WallNode): WallNode {
   }
 }
 
-type WallMeasurementOverlay = {
-  wallId: WallNode['id']
-  dimensionLineEnd: { x1: number; y1: number; x2: number; y2: number }
-  dimensionLineStart: { x1: number; y1: number; x2: number; y2: number }
-  extensionStart: { x1: number; y1: number; x2: number; y2: number }
-  extensionEnd: { x1: number; y1: number; x2: number; y2: number }
-  label: string
-  labelX: number
-  labelY: number
-  labelAngleDeg: number
-  isSelected?: boolean
-}
+// Removed duplicate type definition
 
 function formatMeasurement(value: number, unit: 'metric' | 'imperial') {
   if (unit === 'imperial') {
@@ -1588,6 +1716,110 @@ function isGridAligned(value: number, step: number): boolean {
 
   const normalizedValue = normalizeGridCoordinate(value / step)
   return Math.abs(normalizedValue - Math.round(normalizedValue)) < 1e-4
+}
+
+function getRackFootprint(rack: RackNode): RackPolygonEntry | null {
+  const {
+    position,
+    rotation,
+    unitWidth = 2.7,
+    unitDepth = 1.1,
+    config = [1],
+    backToBack = true,
+    backToBackGap = 0.2,
+    layoutDir = 'v',
+    corridorGap = 5.0,
+  } = rack
+
+  const [ox, , oz] = position
+  const [, rotY] = rotation
+
+  const bays: RackPolygonEntry['bays'] = []
+  const allPoints: Point2D[] = []
+
+  let currentOffset = 0
+  for (const rowBays of config) {
+    for (let i = 0; i < rowBays; i++) {
+      const lx = layoutDir === 'h' ? currentOffset + i * unitWidth + unitWidth / 2 : 0
+      const lz = layoutDir === 'v' ? currentOffset + i * unitWidth + unitWidth / 2 : 0
+
+      const createBayEntry = (locX: number, locZ: number) => {
+        const halfW = unitWidth / 2
+        const halfD = unitDepth / 2
+
+        const corners = [
+          {
+            x: locX - (layoutDir === 'v' ? halfD : halfW),
+            y: locZ - (layoutDir === 'h' ? halfD : halfW),
+          },
+          {
+            x: locX + (layoutDir === 'v' ? halfD : halfW),
+            y: locZ - (layoutDir === 'h' ? halfD : halfW),
+          },
+          {
+            x: locX + (layoutDir === 'v' ? halfD : halfW),
+            y: locZ + (layoutDir === 'h' ? halfD : halfW),
+          },
+          {
+            x: locX - (layoutDir === 'v' ? halfD : halfW),
+            y: locZ + (layoutDir === 'h' ? halfD : halfW),
+          },
+        ]
+
+        const worldPolygon = corners.map((p) => {
+          const rotated = rotateVector([p.x, p.y], -rotY)
+          return { x: rotated[0] + ox, y: rotated[1] + oz }
+        })
+
+        const worldCenter = rotateVector([locX, locZ], -rotY)
+
+        return {
+          polygon: worldPolygon,
+          x: worldCenter[0] + ox,
+          z: worldCenter[1] + oz,
+          width: unitWidth,
+          depth: unitDepth,
+        }
+      }
+
+      const bay1 = createBayEntry(lx, lz)
+      bays.push(bay1)
+      allPoints.push(...bay1.polygon)
+
+      if (backToBack) {
+        const offset = unitDepth + backToBackGap
+        const blx = layoutDir === 'v' ? lx + offset : lx
+        const blz = layoutDir === 'h' ? lz + offset : lz
+        const bay2 = createBayEntry(blx, blz)
+        bays.push(bay2)
+        allPoints.push(...bay2.polygon)
+      }
+    }
+    currentOffset += rowBays * unitWidth + corridorGap
+  }
+
+  if (allPoints.length === 0) {
+    return null
+  }
+
+  const minX = Math.min(...allPoints.map((p) => p.x))
+  const maxX = Math.max(...allPoints.map((p) => p.x))
+  const minY = Math.min(...allPoints.map((p) => p.y))
+  const maxY = Math.max(...allPoints.map((p) => p.y))
+
+  const hull = [
+    { x: minX, y: minY },
+    { x: maxX, y: minY },
+    { x: maxX, y: maxY },
+    { x: minX, y: maxY },
+  ]
+
+  return {
+    rack,
+    polygon: hull,
+    points: hull.map((p) => `${p.x},${p.y}`).join(' '),
+    bays,
+  }
 }
 
 // Keep visible grid spacing above a minimum pixel size so zooming stays evenly distributed.
@@ -3018,9 +3250,167 @@ const FloorplanPolygonHandleLayer = memo(function FloorplanPolygonHandleLayer({
   )
 })
 
+export const FloorplanRackLayer = memo(function FloorplanRackLayer({
+  hoveredRackId,
+  onRackClick,
+  onRackHoverChange,
+  palette,
+  rackPolygons,
+  selectedIdSet,
+}: {
+  hoveredRackId: RackNode['id'] | null
+  onRackClick: (rack: RackNode, event: ReactMouseEvent<SVGElement>) => void
+  onRackHoverChange: (rackId: RackNode['id'] | null) => void
+  palette: FloorplanPalette
+  rackPolygons: RackPolygonEntry[]
+  selectedIdSet: ReadonlySet<string>
+}) {
+  return (
+    <>
+      {rackPolygons.map(({ rack, polygon, bays }) => {
+        const isSelected = selectedIdSet.has(rack.id)
+        const isHovered = hoveredRackId === rack.id
+
+        return (
+          <g
+            key={rack.id}
+            onClick={(event) => {
+              event.stopPropagation()
+              onRackClick(rack, event)
+            }}
+            onPointerEnter={() => onRackHoverChange(rack.id)}
+            onPointerLeave={() => onRackHoverChange(null)}
+            style={{ cursor: EDITOR_CURSOR }}
+          >
+            {/* Draw bays */}
+            {bays.map((bay, i) => (
+              <polygon
+                fill={isSelected ? palette.selectedFill : palette.wallFill}
+                fillOpacity={0.4}
+                key={i}
+                points={bay.polygon.map((p) => `${toSvgX(p.x)} ${toSvgY(p.y)}`).join(' ')}
+                stroke={isSelected ? palette.selectedStroke : palette.wallStroke}
+                strokeWidth="0.04"
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+
+            {/* Selection highlight (bounding box) */}
+            {isSelected && (
+              <polygon
+                fill="none"
+                points={polygon.map((p) => `${toSvgX(p.x)} ${toSvgY(p.y)}`).join(' ')}
+                stroke={palette.selectedStroke}
+                strokeDasharray="0.1 0.1"
+                strokeWidth="0.06"
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
+
+            {/* Hover highlight */}
+            {isHovered && !isSelected && (
+              <polygon
+                fill="none"
+                points={polygon.map((p) => `${toSvgX(p.x)} ${toSvgY(p.y)}`).join(' ')}
+                stroke={palette.wallHoverStroke}
+                strokeOpacity={0.5}
+                strokeWidth="0.08"
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
+          </g>
+        )
+      })}
+    </>
+  )
+})
+
+const FloorplanRackHandleLayer = memo(function FloorplanRackHandleLayer({
+  rackPolygons,
+  onTransformStart,
+  palette,
+}: {
+  rackPolygons: RackPolygonEntry[]
+  onTransformStart: (rackId: RackNode['id'], mode: RackTransformMode, event: ReactPointerEvent) => void
+  palette: any
+}) {
+  return (
+    <g>
+      {rackPolygons.map(({ rack, bays }) => {
+        const [ox, , oz] = rack.position
+        const [, rotY] = rack.rotation
+        const centerSvg = toSvgPoint({ x: ox, y: oz })
+
+        // Find a point for the rotation handle (above the rack assembly)
+        let maxZ = Number.NEGATIVE_INFINITY
+        for (const bay of bays) {
+          for (const point of bay.polygon) {
+            maxZ = Math.max(maxZ, point.y)
+          }
+        }
+        const rotateHandleDistance = 1.0
+        const rotatePlotX = ox - Math.sin(rotY) * (rotateHandleDistance + (maxZ - oz))
+        const rotatePlotZ = oz + Math.cos(rotY) * (rotateHandleDistance + (maxZ - oz))
+
+        return (
+          <g key={`rack-handles-${rack.id}`}>
+            {/* Move Handle (Center) */}
+            <circle
+              cx={centerSvg.x}
+              cy={centerSvg.y}
+              fill={palette.anchor}
+              onPointerDown={(event) => {
+                event.stopPropagation()
+                onTransformStart(rack.id, 'translate', event)
+              }}
+              r="0.15"
+              style={{ cursor: 'move' }}
+              vectorEffect="non-scaling-stroke"
+            />
+            {/* Rotate Handle */}
+            <line
+              stroke={palette.anchor}
+              strokeDasharray="0.1 0.1"
+              strokeWidth="0.05"
+              vectorEffect="non-scaling-stroke"
+              x1={centerSvg.x}
+              x2={toSvgX(rotatePlotX)}
+              y1={centerSvg.y}
+              y2={toSvgY(rotatePlotZ)}
+            />
+            <circle
+              cx={toSvgX(rotatePlotX)}
+              cy={toSvgY(rotatePlotZ)}
+              fill="white"
+              onPointerDown={(event) => {
+                event.stopPropagation()
+                onTransformStart(rack.id, 'rotate', event)
+              }}
+              r="0.12"
+              stroke={palette.anchor}
+              strokeWidth="0.05"
+              style={{ cursor: 'crosshair' }}
+              vectorEffect="non-scaling-stroke"
+            />
+          </g>
+        )
+      })}
+    </g>
+  )
+})
+
 export function FloorplanPanel() {
   const viewportHostRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
+  const rackTransformInteractionRef = useRef<RackTransformInteraction | null>(null)
+  const [activeRackTransformId, setActiveRackTransformId] = useState<RackNode['id'] | null>(null)
+  const [activeRackTransformMode, setActiveRackTransformMode] = useState<RackTransformMode | null>(null)
+
+  const clearRackTransformInteraction = useCallback(() => {
+    rackTransformInteractionRef.current = null
+    setActiveRackTransformId(null)
+    setActiveRackTransformMode(null)
+  }, [])
   const panStateRef = useRef<PanState | null>(null)
   const guideInteractionRef = useRef<GuideInteractionState | null>(null)
   const guideTransformDraftRef = useRef<GuideTransformDraft | null>(null)
@@ -3183,6 +3573,22 @@ export function FloorplanPanel() {
         .filter((node): node is ZoneNodeType => node?.type === 'zone')
     }),
   )
+  const racks = useScene(
+    useShallow((state) => {
+      if (!levelId) {
+        return [] as RackNode[]
+      }
+
+      const nextLevelNode = state.nodes[levelId]
+      if (!nextLevelNode || nextLevelNode.type !== 'level') {
+        return [] as RackNode[]
+      }
+
+      return nextLevelNode.children
+        .map((childId) => state.nodes[childId])
+        .filter((node): node is RackNode => node?.type === 'rack')
+    }),
+  )
 
   const [draftStart, setDraftStart] = useState<WallPlanPoint | null>(null)
   const [draftEnd, setDraftEnd] = useState<WallPlanPoint | null>(null)
@@ -3204,6 +3610,7 @@ export function FloorplanPanel() {
   const [hoveredSiteHandleId, setHoveredSiteHandleId] = useState<string | null>(null)
   const [hoveredSlabHandleId, setHoveredSlabHandleId] = useState<string | null>(null)
   const [hoveredZoneHandleId, setHoveredZoneHandleId] = useState<string | null>(null)
+  const [hoveredRackId, setHoveredRackId] = useState<RackNode['id'] | null>(null)
   const [hoveredGuideCorner, setHoveredGuideCorner] = useState<GuideCorner | null>(null)
   const [floorplanSelectionTool, setFloorplanSelectionTool] =
     useState<FloorplanSelectionTool>('click')
@@ -3260,6 +3667,13 @@ export function FloorplanPanel() {
       points: formatPolygonPoints(polygon),
     }
   }, [site])
+  const rackPolygons = useMemo(
+    () =>
+      racks
+        .map((rack) => getRackFootprint(rack))
+        .filter((entry): entry is RackPolygonEntry => entry !== null),
+    [racks],
+  )
   const displaySitePolygon = useMemo(() => {
     if (!sitePolygonEntry) {
       return null
@@ -3373,6 +3787,10 @@ export function FloorplanPanel() {
   const floorplanWalls = useMemo(() => walls.map(getFloorplanWall), [walls])
   const wallMiterData = useMemo(() => calculateLevelMiters(floorplanWalls), [floorplanWalls])
   const wallById = useMemo(() => new Map(walls.map((wall) => [wall.id, wall] as const)), [walls])
+  const rackById = useMemo(
+    () => new Map(racks.map((rack) => [rack.id, rack] as const)),
+    [racks],
+  )
   const floorplanWallById = useMemo(
     () => new Map(floorplanWalls.map((wall) => [wall.id, wall] as const)),
     [floorplanWalls],
@@ -3610,6 +4028,10 @@ export function FloorplanPanel() {
     [displayZonePolygons, showZonePolygons],
   )
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds])
+  const selectedRacks = useMemo(
+    () => racks.filter((rack) => selectedIdSet.has(rack.id)),
+    [racks, selectedIdSet],
+  )
   const activeMarqueeBounds = useMemo(() => {
     if (!floorplanMarqueeState) {
       return null
@@ -5196,14 +5618,106 @@ export function FloorplanPanel() {
     event.currentTarget.setPointerCapture(event.pointerId)
   }, [])
 
-  const endPanning = useCallback((event?: ReactPointerEvent<SVGSVGElement>) => {
-    if (event && panStateRef.current && event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
-    }
+  const handleRackTransformStart = useCallback(
+    (rackId: RackNode['id'], mode: RackTransformMode, event: PointerEvent | ReactPointerEvent) => {
+      const rack = rackById.get(rackId)
+      if (!rack) return
 
-    panStateRef.current = null
-    setIsPanning(false)
-  }, [])
+      const planPoint = getPlanPointFromClientPoint(event.clientX, event.clientY)
+      if (!planPoint) return
+
+      rackTransformInteractionRef.current = {
+        pointerId: event.pointerId,
+        rackId,
+        mode,
+        initialPosition: [rack.position[0], rack.position[2]],
+        initialRotation: rack.rotation[1],
+        startPlanPoint: planPoint,
+      }
+
+      setActiveRackTransformId(rackId)
+      setActiveRackTransformMode(mode)
+    },
+    [getPlanPointFromClientPoint, rackById],
+  )
+
+  const handleRackTransformMove = useCallback(
+    (event: PointerEvent) => {
+      const interaction = rackTransformInteractionRef.current
+      if (!interaction || event.pointerId !== interaction.pointerId) return
+
+      const planPoint = getPlanPointFromClientPoint(event.clientX, event.clientY)
+      if (!planPoint) return
+
+      const rack = rackById.get(interaction.rackId)
+      if (!rack) return
+
+      if (interaction.mode === 'translate') {
+        const dx = planPoint[0] - interaction.startPlanPoint[0]
+        const dz = planPoint[1] - interaction.startPlanPoint[1]
+        const nextPosition: WallPlanPoint = [
+          snapToHalf(interaction.initialPosition[0] + dx),
+          snapToHalf(interaction.initialPosition[1] + dz),
+        ]
+
+        updateNode(rack.id, {
+          position: [nextPosition[0], rack.position[1], nextPosition[1]],
+        })
+      } else if (interaction.mode === 'rotate') {
+        const [ox, , oz] = rack.position
+        const startAngle = Math.atan2(
+          interaction.startPlanPoint[1] - oz,
+          interaction.startPlanPoint[0] - ox,
+        )
+        const currentAngle = Math.atan2(planPoint[1] - oz, planPoint[0] - ox)
+        const deltaAngle = currentAngle - startAngle
+
+        let nextRotation = interaction.initialRotation - deltaAngle
+        if (!shiftPressed) {
+          // Snap to 45 degrees
+          const degrees = nextRotation * (180 / Math.PI)
+          const snappedDegrees = Math.round(degrees / 45) * 45
+          nextRotation = snappedDegrees * (Math.PI / 180)
+        }
+
+        updateNode(rack.id, {
+          rotation: [rack.rotation[0], nextRotation, rack.rotation[2]],
+        })
+      }
+    },
+    [getPlanPointFromClientPoint, rackById, shiftPressed, updateNode],
+  )
+
+  const commitRackTransform = useCallback(
+    (event: PointerEvent) => {
+      const interaction = rackTransformInteractionRef.current
+      if (!interaction || event.pointerId !== interaction.pointerId) return
+
+      clearRackTransformInteraction()
+    },
+    [clearRackTransformInteraction],
+  )
+
+  const endPanning = useCallback(
+    (event?: ReactPointerEvent<SVGSVGElement>) => {
+      if (
+        event &&
+        panStateRef.current &&
+        event.currentTarget.hasPointerCapture(event.pointerId)
+      ) {
+        event.currentTarget.releasePointerCapture(event.pointerId)
+      }
+
+      if (event && rackTransformInteractionRef.current && event.pointerId === rackTransformInteractionRef.current.pointerId) {
+        commitRackTransform(event.nativeEvent)
+      }
+
+      panStateRef.current = null
+      setIsPanning(false)
+      setFloorplanCursorPosition(null)
+    },
+    [commitRackTransform],
+  )
 
   const hoveredWallIdRef = useRef<string | null>(null)
   const emitFloorplanWallLeave = useCallback((wallId: string | null) => {
@@ -5725,6 +6239,13 @@ export function FloorplanPanel() {
         return slabHit.slab.id
       }
 
+      const rackHit = rackPolygons.find(({ polygon }) =>
+        isPointInsidePolygon(point as any, polygon),
+      )
+      if (rackHit) {
+        return rackHit.rack.id
+      }
+
       return null
     },
     [
@@ -5748,9 +6269,13 @@ export function FloorplanPanel() {
         .filter(({ polygon }) => doesPolygonIntersectSelectionBounds(polygon, bounds))
         .map(({ slab }) => slab.id)
 
-      return Array.from(new Set([...wallIds, ...openingIds, ...slabIds]))
+      const rackIds = rackPolygons
+        .filter(({ polygon }) => doesPolygonIntersectSelectionBounds(polygon, bounds))
+        .map(({ rack }) => rack.id)
+
+      return Array.from(new Set([...wallIds, ...openingIds, ...slabIds, ...rackIds]))
     },
-    [displaySlabPolygons, displayWallPolygons, openingsPolygons],
+    [displaySlabPolygons, displayWallPolygons, openingsPolygons, rackPolygons],
   )
 
   const handleWallSelect = useCallback(
@@ -5760,6 +6285,22 @@ export function FloorplanPanel() {
     [commitFloorplanSelection],
   )
 
+  const handleRackClick = useCallback(
+    (rack: RackNode, event: ReactMouseEvent<SVGElement>) => {
+      event.stopPropagation()
+      const isMulti = event.metaKey || event.ctrlKey || event.shiftKey
+      if (isMulti) {
+        commitFloorplanSelection(
+          selectedIds.includes(rack.id)
+            ? selectedIds.filter((id) => id !== rack.id)
+            : [...selectedIds, rack.id],
+        )
+      } else {
+        commitFloorplanSelection([rack.id])
+      }
+    },
+    [selectedIds, commitFloorplanSelection],
+  )
   const handleWallClick = useCallback(
     (wall: WallNode, event: ReactMouseEvent<SVGElement>) => {
       const centerX = (wall.start[0] + wall.end[0]) / 2
@@ -6034,6 +6575,7 @@ export function FloorplanPanel() {
     [deleteNode, selectedOpeningEntry, setSelection],
   )
 
+// Rack transform handlers moved above
   const handleWallEndpointPointerDown = useCallback(
     (wall: WallNode, endpoint: WallEndpoint, event: ReactPointerEvent<SVGCircleElement>) => {
       if (event.button !== 0) {
@@ -6404,6 +6946,8 @@ export function FloorplanPanel() {
     }
   }, [emitFloorplanWallLeave, siteVertexDragState, slabVertexDragState, zoneVertexDragState])
 
+// Redundant endPanning removed
+
   const handleSvgPointerMove = useCallback(
     (event: ReactPointerEvent<SVGSVGElement>) => {
       if (
@@ -6424,11 +6968,16 @@ export function FloorplanPanel() {
         setFloorplanCursorPosition(null)
       }
 
-      handlePointerMove(event)
+      if (rackTransformInteractionRef.current) {
+        handleRackTransformMove(event.nativeEvent)
+      } else {
+        handlePointerMove(event)
+      }
     },
     [
       activeFloorplanCursorIndicator,
       handlePointerMove,
+      handleRackTransformMove,
       siteVertexDragState,
       slabVertexDragState,
       zoneVertexDragState,
@@ -6655,6 +7204,10 @@ export function FloorplanPanel() {
       svg.removeEventListener('gestureend', handleGestureEnd)
     }
   }, [zoomViewportAtClientPoint])
+
+  const rackMeasurements = useMemo(() => {
+    return selectedRacks.flatMap((rack: RackNode) => getRackMeasurementOverlays(rack, unit))
+  }, [selectedRacks, unit])
 
   const restoreGroundLevelStructureSelection = useCallback(() => {
     const sceneNodes = useScene.getState().nodes
@@ -7339,6 +7892,56 @@ export function FloorplanPanel() {
               selectedZoneId={selectedZoneId}
               zonePolygons={visibleZonePolygons}
             />
+
+            <FloorplanRackLayer
+              hoveredRackId={hoveredRackId}
+              onRackClick={handleRackClick}
+              onRackHoverChange={setHoveredRackId}
+              palette={palette}
+              rackPolygons={rackPolygons}
+              selectedIdSet={selectedIdSet}
+            />
+
+            <FloorplanRackHandleLayer
+              onTransformStart={handleRackTransformStart}
+              palette={palette}
+              rackPolygons={rackPolygons.filter((r) => selectedIdSet.has(r.rack.id))}
+            />
+
+            {rackMeasurements.map((m: RackMeasurementOverlay, i: number) => (
+              <g key={`rack-measure-${m.rackId}-${i}`}>
+                <line
+                  stroke={palette.measurementStroke}
+                  strokeDasharray="0.1 0.05"
+                  strokeWidth="0.04"
+                  vectorEffect="non-scaling-stroke"
+                  x1={m.dimensionLine.x1}
+                  x2={m.dimensionLine.x2}
+                  y1={m.dimensionLine.y1}
+                  y2={m.dimensionLine.y2}
+                />
+                <text
+                  dominantBaseline="central"
+                  fill={palette.measurementStroke}
+                  fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+                  fontSize={FLOORPLAN_MEASUREMENT_LABEL_FONT_SIZE}
+                  fontWeight="600"
+                  paintOrder="stroke"
+                  pointerEvents="none"
+                  stroke={palette.surface}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={FLOORPLAN_MEASUREMENT_LABEL_STROKE_WIDTH}
+                  style={{ userSelect: 'none' }}
+                  textAnchor="middle"
+                  transform={`rotate(${m.labelAngleDeg}, ${m.labelX}, ${m.labelY})`}
+                  x={m.labelX}
+                  y={m.labelY}
+                >
+                  {m.label}
+                </text>
+              </g>
+            ))}
 
             <FloorplanPolygonHandleLayer
               hoveredHandleId={hoveredSiteHandleId}

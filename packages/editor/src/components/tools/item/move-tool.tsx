@@ -5,6 +5,7 @@ import useEditor from '../../../store/use-editor'
 import { MoveDoorTool } from '../door/move-door-tool'
 import { MoveRoofTool } from '../roof/move-roof-tool'
 import { MoveWindowTool } from '../window/move-window-tool'
+import { MoveRackTool } from '../rack/move-rack-tool'
 import type { PlacementState } from './placement-types'
 import { useDraftNode } from './use-draft-node'
 import { usePlacementCoordinator } from './use-placement-coordinator'
@@ -72,9 +73,10 @@ export const MoveTool: React.FC = () => {
   const movingNode = useEditor((state) => state.movingNode)
 
   if (!movingNode) return null
-  if (movingNode.type === 'door') return <MoveDoorTool node={movingNode as DoorNode} />
+  if (movingNode.type === 'door' || movingNode.type === 'warehouse-door') return <MoveDoorTool node={movingNode as any} />
   if (movingNode.type === 'window') return <MoveWindowTool node={movingNode as WindowNode} />
   if (movingNode.type === 'roof' || movingNode.type === 'roof-segment')
     return <MoveRoofTool node={movingNode as RoofNode | RoofSegmentNode} />
+  if (movingNode.type === 'rack') return <MoveRackTool node={movingNode as any} />
   return <MoveItemContent movingNode={movingNode as ItemNode} />
 }

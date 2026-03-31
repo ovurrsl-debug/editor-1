@@ -16,6 +16,8 @@ import { WallTool } from './wall/wall-tool'
 import { WindowTool } from './window/window-tool'
 import { ZoneBoundaryEditor } from './zone/zone-boundary-editor'
 import { ZoneTool } from './zone/zone-tool'
+import { RackTool } from './rack/rack-tool'
+import { WarehouseDoorTool } from './door/warehouse-door-tool'
 
 const tools: Record<Phase, Partial<Record<Tool, React.FC>>> = {
   site: {
@@ -30,6 +32,8 @@ const tools: Record<Phase, Partial<Record<Tool, React.FC>>> = {
     item: ItemTool,
     zone: ZoneTool,
     window: WindowTool,
+    rack: RackTool,
+    'warehouse-door': WarehouseDoorTool,
   },
   furnish: {
     item: ItemTool,

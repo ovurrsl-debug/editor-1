@@ -15,6 +15,8 @@ import { SlabRenderer } from './slab/slab-renderer'
 import { WallRenderer } from './wall/wall-renderer'
 import { WindowRenderer } from './window/window-renderer'
 import { ZoneRenderer } from './zone/zone-renderer'
+import { RackRenderer } from './rack/rack-renderer'
+import { WarehouseDoorRenderer } from './door/warehouse-door-renderer'
 
 export const NodeRenderer = ({ nodeId }: { nodeId: AnyNode['id'] }) => {
   const node = useScene((state) => state.nodes[nodeId])
@@ -37,6 +39,8 @@ export const NodeRenderer = ({ nodeId }: { nodeId: AnyNode['id'] }) => {
       {node.type === 'roof-segment' && <RoofSegmentRenderer node={node} />}
       {node.type === 'scan' && <ScanRenderer node={node} />}
       {node.type === 'guide' && <GuideRenderer node={node} />}
+      {node.type === 'rack' && <RackRenderer node={node} />}
+      {node.type === 'warehouse-door' && <WarehouseDoorRenderer node={node} />}
     </>
   )
 }

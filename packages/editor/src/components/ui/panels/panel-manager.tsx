@@ -12,6 +12,8 @@ import { RoofSegmentPanel } from './roof-segment-panel'
 import { SlabPanel } from './slab-panel'
 import { WallPanel } from './wall-panel'
 import { WindowPanel } from './window-panel'
+import { RackPanel } from './rack-panel'
+import { WarehouseDoorPanel } from './warehouse-door-panel'
 
 export function PanelManager() {
   const selectedIds = useViewer((s) => s.selection.selectedIds)
@@ -45,6 +47,10 @@ export function PanelManager() {
           return <DoorPanel />
         case 'window':
           return <WindowPanel />
+        case 'rack':
+          return <RackPanel />
+        case 'warehouse-door':
+          return <WarehouseDoorPanel />
       }
     }
   }

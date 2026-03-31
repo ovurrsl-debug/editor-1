@@ -17,15 +17,19 @@ export function wallLocalToWorld(
   localY: number,
   levelYOffset = 0,
   slabElevation = 0,
+  localZ = 0,
 ): [number, number, number] {
   const wallAngle = Math.atan2(
     wallNode.end[1] - wallNode.start[1],
     wallNode.end[0] - wallNode.start[0],
   )
+  // Perpendicular angle for depth offset (local Z)
+  const perpAngle = wallAngle + Math.PI / 2
+
   return [
-    wallNode.start[0] + localX * Math.cos(wallAngle),
+    wallNode.start[0] + localX * Math.cos(wallAngle) + localZ * Math.cos(perpAngle),
     slabElevation + localY + levelYOffset,
-    wallNode.start[1] + localX * Math.sin(wallAngle),
+    wallNode.start[1] + localX * Math.sin(wallAngle) + localZ * Math.sin(perpAngle),
   ]
 }
 

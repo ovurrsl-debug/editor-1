@@ -8,6 +8,8 @@ import {
   type LevelNode,
   type RoofNode,
   type RoofSegmentNode,
+  type RackNode,
+  type WarehouseDoorNode,
   type Space,
   useScene,
   type WindowNode,
@@ -34,6 +36,8 @@ export type StructureTool =
   | 'zone'
   | 'window'
   | 'door'
+  | 'rack'
+  | 'warehouse-door'
 
 // Furnish mode tools (items and decoration)
 export type FurnishTool = 'item'
@@ -69,9 +73,9 @@ type EditorState = {
   setCatalogCategory: (category: CatalogCategory | null) => void
   selectedItem: AssetInput | null
   setSelectedItem: (item: AssetInput) => void
-  movingNode: ItemNode | WindowNode | DoorNode | RoofNode | RoofSegmentNode | null
+  movingNode: ItemNode | WindowNode | DoorNode | RoofNode | RoofSegmentNode | RackNode | WarehouseDoorNode | null
   setMovingNode: (
-    node: ItemNode | WindowNode | DoorNode | RoofNode | RoofSegmentNode | null,
+    node: ItemNode | WindowNode | DoorNode | RoofNode | RoofSegmentNode | RackNode | WarehouseDoorNode | null,
   ) => void
   selectedReferenceId: string | null
   setSelectedReferenceId: (id: string | null) => void
