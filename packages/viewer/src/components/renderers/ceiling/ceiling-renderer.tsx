@@ -40,7 +40,7 @@ export const CeilingRenderer = ({ node }: { node: CeilingNode }) => {
   const handlers = useNodeEvents(node, 'ceiling')
 
   const materials = useMemo(() => {
-    const mat = node.material
+    const mat = (node as any).material
     if (mat) {
       const props = mat.properties
       const color = props?.color || '#999999'
@@ -50,7 +50,7 @@ export const CeilingRenderer = ({ node }: { node: CeilingNode }) => {
       topMaterial: createCeilingMaterials().topMaterial,
       bottomMaterial: DEFAULT_CEILING_MATERIAL,
     }
-  }, [node.material, node.material?.preset, node.material?.properties, node.material?.texture])
+  }, [(node as any).material, (node as any).material?.preset, (node as any).material?.properties, (node as any).material?.texture])
 
   return (
     <mesh material={materials.bottomMaterial} ref={ref}>

@@ -16,10 +16,10 @@ export const RoofRenderer = ({ node }: { node: RoofNode }) => {
   const debugColors = useViewer((s) => s.debugColors)
 
   const customMaterial = useMemo(() => {
-    const mat = node.material
+    const mat = (node as any).material
     if (!mat) return null
     return createMaterial(mat)
-  }, [node.material, node.material?.preset, node.material?.properties, node.material?.texture])
+  }, [(node as any).material, (node as any).material?.preset, (node as any).material?.properties, (node as any).material?.texture])
 
   const material = debugColors ? roofDebugMaterials : customMaterial || roofMaterials
 

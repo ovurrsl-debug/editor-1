@@ -30,7 +30,9 @@ const edgeMaterial = new LineBasicNodeMaterial({
   depthWrite: false,
 })
 
-export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNode }) => {
+export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({
+  node: movingDoorNode,
+}) => {
   const cursorGroupRef = useRef<Group>(null!)
 
   const exitMoveMode = useCallback(() => {
@@ -235,6 +237,7 @@ export const MoveDoorTool: React.FC<{ node: DoorNode }> = ({ node: movingDoorNod
 
         const cloned = structuredClone(movingDoorNode) as any
         delete cloned.id
+        
         const node = DoorNode.parse({
           ...cloned,
           position: [clampedX, clampedY, 0],

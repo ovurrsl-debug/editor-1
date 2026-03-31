@@ -17,6 +17,8 @@ export type {
   WallEvent,
   WindowEvent,
   ZoneEvent,
+  RackEvent,
+  WarehouseDoorEvent,
 } from './events/bus'
 // Events
 export { emitter, eventSuffixes } from './events/bus'

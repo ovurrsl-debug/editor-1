@@ -259,7 +259,12 @@ function collectCutoutBrushes(
   const wallMatrixInverse = wallMesh.matrixWorld.clone().invert()
 
   for (const child of childrenNodes) {
-    if (child.type !== 'item' && child.type !== 'window' && child.type !== 'door') continue
+    if (child.type !== 'item' && child.type !== 'window' && child.type !== 'door' && child.type !== 'warehouse-door') continue
+
+    // Skip CSG subtraction for transient (ghost) nodes to ensure smooth placement performance.
+    // The visual mesh remains visible, but we don't cut a hole in the wall until placed.
+    const isTransient = !!(child.metadata as Record<string, unknown> | null)?.isTransient
+    if (isTransient) continue
 
     const childMesh = sceneRegistry.nodes.get(child.id)
     if (!childMesh) continue

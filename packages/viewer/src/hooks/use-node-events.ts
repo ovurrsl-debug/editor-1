@@ -25,6 +25,10 @@ import {
   type WindowNode,
   type ZoneEvent,
   type ZoneNode,
+  type RackEvent,
+  type RackNode,
+  type WarehouseDoorEvent,
+  type WarehouseDoorNode,
 } from '@pascal-app/core'
 import type { ThreeEvent } from '@react-three/fiber'
 import useViewer from '../store/use-viewer'
@@ -42,6 +46,8 @@ type NodeConfig = {
   'roof-segment': { node: RoofSegmentNode; event: RoofSegmentEvent }
   window: { node: WindowNode; event: WindowEvent }
   door: { node: DoorNode; event: DoorEvent }
+  rack: { node: RackNode; event: RackEvent }
+  'warehouse-door': { node: WarehouseDoorNode; event: WarehouseDoorEvent }
 }
 
 type NodeType = keyof NodeConfig

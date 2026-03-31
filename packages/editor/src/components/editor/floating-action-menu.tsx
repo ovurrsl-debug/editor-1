@@ -107,6 +107,8 @@ export function FloatingActionMenu() {
       if (duplicate) {
         if (duplicate.type === 'door' || duplicate.type === 'window') {
           useScene.getState().createNode(duplicate, duplicate.parentId as AnyNodeId)
+        } else if (duplicate.type === 'item') {
+          useScene.getState().createNode(duplicate, duplicate.parentId as AnyNodeId)
         } else if (duplicate.type === 'roof' || duplicate.type === 'roof-segment') {
           // Add small offset to make it visible
           if ('position' in duplicate) {

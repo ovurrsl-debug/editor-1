@@ -13,6 +13,8 @@ import type {
   WallNode,
   WindowNode,
   ZoneNode,
+  RackNode,
+  WarehouseDoorNode,
 } from '../schema'
 import type { AnyNode } from '../schema/types'
 
@@ -43,6 +45,8 @@ export type RoofEvent = NodeEvent<RoofNode>
 export type RoofSegmentEvent = NodeEvent<RoofSegmentNode>
 export type WindowEvent = NodeEvent<WindowNode>
 export type DoorEvent = NodeEvent<DoorNode>
+export type RackEvent = NodeEvent<RackNode>
+export type WarehouseDoorEvent = NodeEvent<WarehouseDoorNode>
 
 // Event suffixes - exported for use in hooks
 export const eventSuffixes = [
@@ -106,6 +110,8 @@ type EditorEvents = GridEvents &
   NodeEvents<'roof-segment', RoofSegmentEvent> &
   NodeEvents<'window', WindowEvent> &
   NodeEvents<'door', DoorEvent> &
+  NodeEvents<'rack', RackEvent> &
+  NodeEvents<'warehouse-door', WarehouseDoorEvent> &
   CameraControlEvents &
   ToolEvents &
   PresetEvents

@@ -64,8 +64,6 @@ import { SlabTreeNode } from './slab-tree-node'
 import { WallTreeNode } from './wall-tree-node'
 import { WindowTreeNode } from './window-tree-node'
 import { ZoneTreeNode } from './zone-tree-node'
-import { RackTreeNode } from './rack-tree-node'
-import { DoorTreeNode as WarehouseDoorTreeNode } from './door-tree-node'
 
 interface TreeNodeProps {
   nodeId: AnyNodeId
@@ -99,10 +97,6 @@ export function TreeNode({ nodeId, depth = 0, isLast }: TreeNodeProps) {
       return <WindowTreeNode depth={depth} isLast={isLast} node={node as any} />
     case 'zone':
       return <ZoneTreeNode depth={depth} isLast={isLast} node={node as any} />
-    case 'rack':
-      return <RackTreeNode depth={depth} isLast={isLast} node={node as any} />
-    case 'warehouse-door':
-      return <WarehouseDoorTreeNode depth={depth} isLast={isLast} node={node as any} />
     default:
       return null
   }

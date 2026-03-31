@@ -12,10 +12,10 @@ export const WindowRenderer = ({ node }: { node: WindowNode }) => {
   const isTransient = !!(node.metadata as Record<string, unknown> | null)?.isTransient
 
   const material = useMemo(() => {
-    const mat = node.material
+    const mat = (node as any).material
     if (!mat) return DEFAULT_WINDOW_MATERIAL
     return createMaterial(mat)
-  }, [node.material, node.material?.preset, node.material?.properties, node.material?.texture])
+  }, [(node as any).material, (node as any).material?.preset, (node as any).material?.properties, (node as any).material?.texture])
 
   return (
     <mesh

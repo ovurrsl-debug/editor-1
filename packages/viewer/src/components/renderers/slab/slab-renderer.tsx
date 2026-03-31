@@ -12,10 +12,10 @@ export const SlabRenderer = ({ node }: { node: SlabNode }) => {
   const handlers = useNodeEvents(node, 'slab')
 
   const material = useMemo(() => {
-    const mat = node.material
+    const mat = (node as any).material
     if (!mat) return DEFAULT_SLAB_MATERIAL
     return createMaterial(mat)
-  }, [node.material, node.material?.preset, node.material?.properties, node.material?.texture])
+  }, [(node as any).material, (node as any).material?.preset, (node as any).material?.properties, (node as any).material?.texture])
 
   return (
     <mesh
