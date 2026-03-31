@@ -34,6 +34,8 @@ type SelectableNodeType =
   | 'roof-segment'
   | 'window'
   | 'door'
+  | 'rack'
+  | 'warehouse-door'
 
 type ModifierKeys = {
   meta: boolean
@@ -97,7 +99,7 @@ const SELECTION_STRATEGIES: Record<string, SelectionStrategy> = {
   },
 
   structure: {
-    types: ['wall', 'item', 'zone', 'slab', 'ceiling', 'roof', 'roof-segment', 'window', 'door'],
+    types: ['wall', 'item', 'zone', 'slab', 'ceiling', 'roof', 'roof-segment', 'window', 'door', 'rack', 'warehouse-door'],
     handleSelect: (node, nativeEvent, modifierKeys) => {
       const { selection, setSelection } = useViewer.getState()
       const nodes = useScene.getState().nodes
@@ -142,7 +144,9 @@ const SELECTION_STRATEGIES: Record<string, SelectionStrategy> = {
         node.type === 'slab' ||
         node.type === 'ceiling' ||
         node.type === 'roof' ||
-        node.type === 'roof-segment'
+        node.type === 'roof-segment' ||
+        node.type === 'rack' ||
+        node.type === 'warehouse-door'
       )
         return true
       if (node.type === 'item') {
@@ -203,7 +207,9 @@ const getSelectionTarget = (node: AnyNode): SelectionTarget | null => {
     node.type === 'roof' ||
     node.type === 'roof-segment' ||
     node.type === 'window' ||
-    node.type === 'door'
+    node.type === 'door' ||
+    node.type === 'rack' ||
+    node.type === 'warehouse-door'
   ) {
     return {
       phase: 'structure',
@@ -321,6 +327,8 @@ export const SelectionManager = () => {
       'window',
       'door',
       'zone',
+      'rack',
+      'warehouse-door',
     ]
     allTypes.forEach((type) => {
       emitter.on(`${type}:click` as any, onClick as any)
@@ -403,6 +411,8 @@ export const SelectionManager = () => {
       'roof-segment',
       'window',
       'door',
+      'rack',
+      'warehouse-door',
     ]
     allTypes.forEach((type) => {
       emitter.on(`${type}:click` as any, onClick as any)
@@ -532,6 +542,8 @@ export const SelectionManager = () => {
       'door',
       'zone',
       'site',
+      'rack',
+      'warehouse-door',
     ]
     allTypes.forEach((type) => {
       emitter.on(`${type}:enter` as any, onEnter as any)

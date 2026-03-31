@@ -22,6 +22,8 @@ export const sceneRegistry = {
     guide: new Set<string>(),
     window: new Set<string>(),
     door: new Set<string>(),
+    rack: new Set<string>(),
+    'warehouse-door': new Set<string>(),
   },
 
   /** Remove all entries. Call when unloading a scene to prevent stale 3D refs. */

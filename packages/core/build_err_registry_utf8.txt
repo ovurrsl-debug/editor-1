@@ -1,0 +1,15 @@
+﻿bun.exe : $ tsc --build
+At C:\Users\ovurr\AppData\R
+oaming\npm\bun.ps1:14 char:
+3
++   & "$basedir/node_module
+s/bun/bin/bun.exe"   $args
++   ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: ($ t  
+  sc --build:String) [],   
+  RemoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
