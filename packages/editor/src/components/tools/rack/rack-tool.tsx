@@ -1,3 +1,4 @@
+/// <reference types="@react-three/fiber" />
 import {
   type AnyNodeId,
   RackNode,
@@ -33,26 +34,32 @@ export const RackTool: React.FC = () => {
       if (cursorGroupRef.current) cursorGroupRef.current.visible = false
     }
 
-    const updateCursor = (worldPosition: [number, number, number]) => {
+    const updateCursor = (worldPosition: [number, number, number], nativeEvent?: PointerEvent | MouseEvent) => {
       const group = cursorGroupRef.current
       if (!group) return
+      
+      const isFine = nativeEvent?.ctrlKey || nativeEvent?.metaKey
+      const snap = isFine ? 1000 : 100
+      
       group.visible = true
-      // Snap to grid or just follow pointer
-      const snapX = Math.round(worldPosition[0] * 10) / 10
-      const snapZ = Math.round(worldPosition[2] * 10) / 10
+      const snapX = Math.round(worldPosition[0] * snap) / snap
+      const snapZ = Math.round(worldPosition[2] * snap) / snap
       group.position.set(snapX, worldPosition[1], snapZ)
     }
 
     const onGridMove = (event: GridEvent | SlabEvent) => {
-      updateCursor(event.position)
+      updateCursor(event.position, event.nativeEvent as any)
     }
 
     const onGridClick = (event: GridEvent | SlabEvent) => {
       const levelId = currentLevelIdRef.current
       if (!levelId) return
 
-      const snapX = Math.round(event.position[0] * 10) / 10
-      const snapZ = Math.round(event.position[2] * 10) / 10
+      const isFine = event.nativeEvent.ctrlKey || event.nativeEvent.metaKey
+      const snap = isFine ? 1000 : 100
+      
+      const snapX = Math.round(event.position[0] * snap) / snap
+      const snapZ = Math.round(event.position[2] * snap) / snap
 
       // Pause history to bundle potential actions
       useScene.temporal.getState().resume()

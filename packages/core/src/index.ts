@@ -34,7 +34,7 @@ export {
 } from './hooks/spatial-grid/spatial-grid-sync'
 export { useSpatialQuery } from './hooks/spatial-grid/use-spatial-query'
 // Asset storage
-export { loadAssetUrl, saveAsset } from './lib/asset-storage'
+export { deleteAsset, loadAssetUrl, saveAsset } from './lib/asset-storage'
 // Space detection
 export {
   detectSpacesForLevel,

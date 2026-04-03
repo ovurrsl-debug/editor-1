@@ -161,6 +161,7 @@ export function RackPanel() {
       palletHeight: node.palletHeight,
       palletLoadHeight: node.palletLoadHeight,
       palletsPerShelf: node.palletsPerShelf,
+      bayGap: node.bayGap,
       clearancePalletToPallet: node.clearancePalletToPallet,
       clearancePalletToUpright: node.clearancePalletToUpright,
       clearanceTopToBeam: node.clearanceTopToBeam,
@@ -230,6 +231,7 @@ export function RackPanel() {
     config: node.config ?? [1],
     layoutDir: node.layoutDir ?? 'v',
     corridorGap: node.corridorGap ?? 5.0,
+    bayGap: node.bayGap ?? 0,
     backToBack: node.backToBack ?? true,
     backToBackGap: node.backToBackGap ?? 0.2,
     palletWidth: node.palletWidth ?? 0.8,
@@ -535,6 +537,12 @@ export function RackPanel() {
             value={d.layoutDir}
           />
         </div>
+        <SliderControl
+          label="Bay Aralığı"
+          max={200} min={0} step={1} unit="cm"
+          value={d.bayGap * 100}
+          onChange={(v) => handleUpdate({ bayGap: v / 100 })}
+        />
         <SliderControl
           label="Koridor Aralığı"
           max={1000} min={0} step={5} unit="cm"

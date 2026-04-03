@@ -111,8 +111,8 @@ export const CeilingTool: React.FC = () => {
     const onGridMove = (event: GridEvent) => {
       if (!(cursorRef.current && gridCursorRef.current)) return
 
-      const gridX = Math.round(event.position[0] * 2) / 2
-      const gridZ = Math.round(event.position[2] * 2) / 2
+      const gridX = Math.round(event.position[0] * 100) / 100
+      const gridZ = Math.round(event.position[2] * 100) / 100
       const gridPosition: [number, number] = [gridX, gridZ]
 
       setCursorPosition(gridPosition)

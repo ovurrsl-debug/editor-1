@@ -21,6 +21,7 @@ import {
   Plus,
   Trash2,
   X,
+  Ruler,
 } from 'lucide-react'
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
@@ -155,12 +156,70 @@ function PropertyLineSection() {
       </div>
 
       {/* Measurements */}
-      <div className="relative flex gap-3 pr-3 pb-2 pl-10">
-        <div className="text-muted-foreground text-xs">
-          Area: <span className="text-foreground">{area.toFixed(1)} m²</span>
+      <div className="relative flex flex-col gap-1 pr-3 pb-3 pl-10">
+        <div className="flex gap-3">
+          <div className="text-muted-foreground text-[11px]">
+            Area: <span className="text-foreground font-mono font-medium">{area.toFixed(1)} m²</span>
+          </div>
+          <div className="text-muted-foreground text-[11px]">
+            Perimeter: <span className="text-foreground font-mono font-medium">{perimeter.toFixed(1)} m</span>
+          </div>
         </div>
-        <div className="text-muted-foreground text-xs">
-          Perimeter: <span className="text-foreground">{perimeter.toFixed(1)} m</span>
+
+        {/* Quick Resize - Width & Height Input */}
+        <div className="mt-2 grid grid-cols-2 gap-2 bg-black/10 p-2 rounded-lg border border-white/5">
+          <div className="space-y-1">
+            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 px-1">Width (X)</label>
+            <input
+              type="number"
+              className="w-full bg-transparent border border-white/10 rounded px-2 py-1 text-xs font-mono focus:border-primary outline-none"
+              placeholder="Width m"
+              onBlur={(e) => {
+                const w = parseFloat(e.target.value)
+                if (isNaN(w) || w <= 0) return
+                
+                // Calculate current height or keep default
+                const minZ = Math.min(...points.map(p => p[1]))
+                const maxZ = Math.max(...points.map(p => p[1]))
+                const h = Math.abs(maxZ - minZ) || 10
+                
+                const newPoints: [number, number][] = [
+                  [-w/2, -h/2], [w/2, -h/2], [w/2, h/2], [-w/2, h/2]
+                ]
+                updateNode(siteNode.id, {
+                  polygon: { type: 'polygon', points: newPoints }
+                })
+              }}
+              defaultValue={Math.abs(Math.max(...points.map(p => p[0])) - Math.min(...points.map(p => p[0]))).toFixed(2)}
+              key={`w-${points.length}-${Math.max(...points.map(p => p[0]))}`}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] uppercase font-bold text-muted-foreground/60 px-1">Height (Z)</label>
+            <input
+              type="number"
+              className="w-full bg-transparent border border-white/10 rounded px-2 py-1 text-xs font-mono focus:border-primary outline-none"
+              placeholder="Height m"
+              onBlur={(e) => {
+                const h = parseFloat(e.target.value)
+                if (isNaN(h) || h <= 0) return
+                
+                // Calculate current width or keep default
+                const minX = Math.min(...points.map(p => p[0]))
+                const maxX = Math.max(...points.map(p => p[0]))
+                const w = Math.abs(maxX - minX) || 10
+                
+                const newPoints: [number, number][] = [
+                  [-w/2, -h/2], [w/2, -h/2], [w/2, h/2], [-w/2, h/2]
+                ]
+                updateNode(siteNode.id, {
+                  polygon: { type: 'polygon', points: newPoints }
+                })
+              }}
+              defaultValue={Math.abs(Math.max(...points.map(p => p[1])) - Math.min(...points.map(p => p[1]))).toFixed(2)}
+              key={`h-${points.length}-${Math.max(...points.map(p => p[1]))}`}
+            />
+          </div>
         </div>
       </div>
 
@@ -316,12 +375,21 @@ function ReferenceItem({
   handleDelete: (id: string, e: React.MouseEvent) => void
 }) {
   const [isEditing, setIsEditing] = useState(false)
+  const isCalibrating = useEditor((s) => s.isCalibrating)
+  const setIsCalibrating = useEditor((s) => s.setIsCalibrating)
+
   const handleSelect = () => {
     setSelectedReferenceId(refNode.id)
   }
 
   const handleDoubleClick = () => {
     focusTreeNode(refNode.id as AnyNodeId)
+  }
+
+  const handleStartCalibration = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    handleSelect()
+    setIsCalibrating(true)
   }
 
   return (
@@ -365,13 +433,28 @@ function ReferenceItem({
         />
       </div>
 
-      <button
-        className="z-20 flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground opacity-0 transition-colors hover:bg-black/5 hover:text-foreground group-hover/ref:opacity-100 dark:hover:bg-white/10"
-        onClick={(e) => handleDelete(refNode.id, e)}
-        title="Delete"
-      >
-        <Trash2 className="h-3 w-3" />
-      </button>
+      <div className="flex items-center gap-1 opacity-0 group-hover/ref:opacity-100 transition-opacity">
+        {refNode.type === 'guide' && (
+          <button
+            className={cn(
+              "flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10",
+              isCalibrating && "bg-primary/20 text-primary"
+            )}
+            onClick={handleStartCalibration}
+            title="Manual Scale (Ruler)"
+          >
+            <Ruler className="h-3.5 w-3.5" />
+          </button>
+        )}
+        
+        <button
+          className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
+          onClick={(e) => handleDelete(refNode.id, e)}
+          title="Delete"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
+      </div>
     </div>
   )
 }
@@ -383,7 +466,7 @@ interface LevelReferencesProps {
   isLastLevel?: boolean
   projectId?: string
   onUploadAsset?: (projectId: string, levelId: string, file: File, type: 'scan' | 'guide') => void
-  onDeleteAsset?: (projectId: string, url: string) => void
+  onDeleteAsset?: (projectId: string, levelId: string, url: string) => void
 }
 
 function LevelReferences({
@@ -440,7 +523,6 @@ function LevelReferences({
     const isScan =
       file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf')
     const isImage = file.type.startsWith('image/')
-
     if (!(isScan || isImage)) {
       useUploadStore.getState().startUpload(levelId, 'scan', file.name)
       useUploadStore
@@ -464,7 +546,7 @@ function LevelReferences({
       refNode?.url &&
       (refNode.url.startsWith('http://') || refNode.url.startsWith('https://'))
     ) {
-      onDeleteAsset?.(projectId, refNode.url)
+      onDeleteAsset?.(projectId, levelId, refNode.url)
     }
     deleteNode(nodeId as AnyNodeId)
   }
@@ -567,7 +649,7 @@ function LevelItem({
   isLast?: boolean
   projectId?: string
   onUploadAsset?: (projectId: string, levelId: string, file: File, type: 'scan' | 'guide') => void
-  onDeleteAsset?: (projectId: string, url: string) => void
+  onDeleteAsset?: (projectId: string, levelId: string, url: string) => void
 }) {
   const [cameraPopoverOpen, setCameraPopoverOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -787,7 +869,7 @@ function LevelsSection({
 }: {
   projectId?: string
   onUploadAsset?: (projectId: string, levelId: string, file: File, type: 'scan' | 'guide') => void
-  onDeleteAsset?: (projectId: string, url: string) => void
+  onDeleteAsset?: (projectId: string, levelId: string, url: string) => void
 } = {}) {
   const nodes = useScene((state) => state.nodes)
   const createNode = useScene((state) => state.createNode)
@@ -1269,7 +1351,7 @@ function BuildingItem({
   setBuildingCameraOpen: (id: string | null) => void
   projectId?: string
   onUploadAsset?: (projectId: string, levelId: string, file: File, type: 'scan' | 'guide') => void
-  onDeleteAsset?: (projectId: string, url: string) => void
+  onDeleteAsset?: (projectId: string, levelId: string, url: string) => void
 }) {
   const setSelection = useViewer((state) => state.setSelection)
   const phase = useEditor((state) => state.phase)
@@ -1427,7 +1509,7 @@ function BuildingItem({
 export interface SitePanelProps {
   projectId?: string
   onUploadAsset?: (projectId: string, levelId: string, file: File, type: 'scan' | 'guide') => void
-  onDeleteAsset?: (projectId: string, url: string) => void
+  onDeleteAsset?: (projectId: string, levelId: string, url: string) => void
 }
 
 export function SitePanel({ projectId, onUploadAsset, onDeleteAsset }: SitePanelProps = {}) {

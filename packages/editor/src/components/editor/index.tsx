@@ -1,7 +1,9 @@
 'use client'
+ 
+import { Ruler, X } from 'lucide-react'
 
 import { Icon } from '@iconify/react'
-import { initSpaceDetectionSync, initSpatialGridSync, useScene } from '@pascal-app/core'
+import { deleteAsset, GuideNode, initSpaceDetectionSync, initSpatialGridSync, loadAssetUrl, saveAsset, ScanNode, useScene } from '@pascal-app/core'
 import { InteractiveSystem, useViewer, Viewer } from '@pascal-app/viewer'
 import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { ViewerOverlay } from '../../components/viewer-overlay'
@@ -21,6 +23,7 @@ import { CeilingSystem } from '../systems/ceiling/ceiling-system'
 import { RoofEditSystem } from '../systems/roof/roof-edit-system'
 import { ZoneLabelEditorSystem } from '../systems/zone/zone-label-editor-system'
 import { ZoneSystem } from '../systems/zone/zone-system'
+import { CalibrationSystem } from '../systems/guide/calibration-system'
 import { ToolManager } from '../tools/tool-manager'
 import { ActionMenu } from '../ui/action-menu'
 import { HelperManager } from '../ui/helpers/helper-manager'
@@ -334,6 +337,8 @@ export default function Editor({
   const [isCameraControlsHintVisible, setIsCameraControlsHintVisible] = useState<boolean | null>(
     null,
   )
+  const isCalibrating = useEditor((s) => s.isCalibrating)
+  const setIsCalibrating = useEditor((s) => s.setIsCalibrating)
   const isPreviewMode = useEditor((s) => s.isPreviewMode)
   const isFirstPersonMode = useEditor((s) => s.isFirstPersonMode)
   const isFloorplanOpen = useEditor((s) => s.isFloorplanOpen)
@@ -407,6 +412,40 @@ export default function Editor({
     setIsCameraControlsHintVisible(false)
     writeCameraControlsHintDismissed(true)
   }, [])
+  const createNode = useScene((s) => s.createNode)
+  const deleteNode = useScene((s) => s.deleteNode)
+
+  const handleDefaultUploadAsset = useCallback(
+    async (_p: string, levelId: string, file: File, type: 'scan' | 'guide') => {
+      const url = await saveAsset(file)
+      const common = {
+        parentId: levelId as any,
+        url,
+        fileName: file.name,
+      }
+
+      if (type === 'scan') {
+        createNode(ScanNode.parse(common), levelId as any)
+      } else {
+        createNode(GuideNode.parse(common), levelId as any)
+      }
+    },
+    [createNode],
+  )
+
+  const handleDefaultDeleteAsset = useCallback(
+    async (_p: string, _l: string, url: string) => {
+      if (url.startsWith('blob:')) {
+        URL.revokeObjectURL(url)
+      } else {
+        // @ts-ignore - resolve deleteAsset export issue later
+        if (typeof deleteAsset === 'function') {
+          await deleteAsset(url)
+        }
+      }
+    },
+    [],
+  )
 
   return (
     <PresetsProvider adapter={presetsAdapter}>
@@ -432,6 +471,23 @@ export default function Editor({
           <ViewerOverlay onBack={() => useEditor.getState().setPreviewMode(false)} />
         ) : (
           <>
+            {isCalibrating && (
+              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none">
+                <div className="bg-primary px-4 py-2 rounded-full shadow-lg text-primary-foreground font-medium flex items-center gap-2 pointer-events-auto">
+                  <Ruler className="h-4 w-4" />
+                  <span>Calibration Mode: Click two points on the floorplan</span>
+                  <button 
+                    onClick={() => setIsCalibrating(false)}
+                    className="ml-2 hover:bg-black/20 rounded-full p-1 transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="bg-background/80 backdrop-blur-sm px-3 py-1 rounded-lg text-xs border border-border shadow-md">
+                  Measurement will define the real-world distance between points
+                </div>
+              </div>
+            )}
             <ActionMenu />
             <PanelManager />
             {isFloorplanOpen && <FloorplanPanel />}
@@ -442,7 +498,14 @@ export default function Editor({
                 appMenuButton={appMenuButton}
                 settingsPanelProps={settingsPanelProps}
                 sidebarTop={sidebarTop}
-                sitePanelProps={sitePanelProps}
+                sitePanelProps={{
+                  projectId: projectId ?? undefined,
+                  onUploadAsset: sitePanelProps?.onUploadAsset ?? handleDefaultUploadAsset,
+                  onDeleteAsset: (p, l, u) => {
+                    const fn = sitePanelProps?.onDeleteAsset ?? handleDefaultDeleteAsset
+                    fn(p, l, u)
+                  },
+                }}
               />
             </SidebarProvider>
           </>
@@ -455,6 +518,14 @@ export default function Editor({
               {!isPreviewMode && !isFirstPersonMode && <SelectionManager />}
               {!isPreviewMode && !isFirstPersonMode && <FloatingActionMenu />}
               {!isPreviewMode && !isFirstPersonMode && <WallMeasurementLabel />}
+              <CalibrationSystem 
+                onConfirm={(scale) => {
+                  console.log('Calibration confirmed, new scale:', scale)
+                }}
+                onCancel={() => {
+                  console.log('Calibration cancelled')
+                }}
+              />
               <ExportManager />
               {isPreviewMode || isFirstPersonMode ? <ViewerZoneSystem /> : <ZoneSystem />}
               <CeilingSystem />

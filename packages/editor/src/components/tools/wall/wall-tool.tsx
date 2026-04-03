@@ -132,6 +132,7 @@ export const WallTool: React.FC = () => {
         const snappedStart = snapWallDraftPoint({
           point: clickPoint,
           walls,
+          bypassSnapping: shiftPressed.current,
         })
         gridPosition = snappedStart
         startingPoint.current.set(snappedStart[0], event.position[1], snappedStart[1])
@@ -144,6 +145,7 @@ export const WallTool: React.FC = () => {
           walls,
           start: [startingPoint.current.x, startingPoint.current.z],
           angleSnap: !shiftPressed.current,
+          bypassSnapping: shiftPressed.current,
         })
         endingPoint.current.set(snappedEnd[0], event.position[1], snappedEnd[1])
         const dx = endingPoint.current.x - startingPoint.current.x

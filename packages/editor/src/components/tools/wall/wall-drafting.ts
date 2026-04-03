@@ -2,15 +2,16 @@ import { useScene, type WallNode, WallNode as WallSchema } from '@pascal-app/cor
 import { useViewer } from '@pascal-app/viewer'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 export type WallPlanPoint = [number, number]
-export const WALL_GRID_STEP = 0.5
+export const WALL_GRID_STEP = 0 // Disable snapping for raw coordinates
 export const WALL_JOIN_SNAP_RADIUS = 0.35
-export const WALL_MIN_LENGTH = 0.5
+export const WALL_MIN_LENGTH = 0.05
 function distanceSquared(a: WallPlanPoint, b: WallPlanPoint): number {
   const dx = a[0] - b[0]
   const dz = a[1] - b[1]
   return dx * dx + dz * dz
 }
 function snapScalarToGrid(value: number, step = WALL_GRID_STEP): number {
+  if (step <= 0) return value
   return Math.round(value / step) * step
 }
 export function snapPointToGrid(point: WallPlanPoint, step = WALL_GRID_STEP): WallPlanPoint {
@@ -83,9 +84,15 @@ export function snapWallDraftPoint(args: {
   start?: WallPlanPoint
   angleSnap?: boolean
   ignoreWallIds?: string[]
+  bypassSnapping?: boolean
 }): WallPlanPoint {
-  const { point, walls, start, angleSnap = false, ignoreWallIds } = args
+  const { point, walls, start, angleSnap = false, ignoreWallIds, bypassSnapping = false } = args
+  
+  // If snapping is disabled (e.g. Shift held), return raw point or raw angle-snapped point
   const basePoint = start && angleSnap ? snapPointTo45Degrees(start, point) : snapPointToGrid(point)
+  
+  if (bypassSnapping) return basePoint
+
   return (
     findWallSnapTarget(basePoint, walls, {
       ignoreWallIds,

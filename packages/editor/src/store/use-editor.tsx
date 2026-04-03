@@ -12,6 +12,7 @@ import {
   type WarehouseDoorNode,
   type Space,
   useScene,
+  type WallNode,
   type WindowNode,
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
@@ -73,9 +74,9 @@ type EditorState = {
   setCatalogCategory: (category: CatalogCategory | null) => void
   selectedItem: AssetInput | null
   setSelectedItem: (item: AssetInput) => void
-  movingNode: ItemNode | WindowNode | DoorNode | RoofNode | RoofSegmentNode | RackNode | WarehouseDoorNode | null
+  movingNode: ItemNode | WindowNode | DoorNode | RoofNode | RoofSegmentNode | RackNode | WarehouseDoorNode | WallNode | null
   setMovingNode: (
-    node: ItemNode | WindowNode | DoorNode | RoofNode | RoofSegmentNode | RackNode | WarehouseDoorNode | null,
+    node: ItemNode | WindowNode | DoorNode | RoofNode | RoofSegmentNode | RackNode | WarehouseDoorNode | WallNode | null,
   ) => void
   selectedReferenceId: string | null
   setSelectedReferenceId: (id: string | null) => void
@@ -100,6 +101,10 @@ type EditorState = {
   // First-person walkthrough mode (street view)
   isFirstPersonMode: boolean
   setFirstPersonMode: (enabled: boolean) => void
+  isCalibrating: boolean
+  setIsCalibrating: (calibrating: boolean) => void
+  calibrationPoints: [number, number, number][]
+  setCalibrationPoints: (points: [number, number, number][]) => void
 }
 
 export type PersistedEditorUiState = Pick<
@@ -329,7 +334,7 @@ const useEditor = create<EditorState>()(
       setCatalogCategory: (category) => set({ catalogCategory: category }),
       selectedItem: null,
       setSelectedItem: (item) => set({ selectedItem: item }),
-      movingNode: null as ItemNode | WindowNode | DoorNode | RoofNode | RoofSegmentNode | null,
+      movingNode: null as ItemNode | WindowNode | DoorNode | RoofNode | RoofSegmentNode | WallNode | null,
       setMovingNode: (node) => set({ movingNode: node }),
       selectedReferenceId: null,
       setSelectedReferenceId: (id) => set({ selectedReferenceId: id }),
@@ -371,6 +376,13 @@ const useEditor = create<EditorState>()(
           set({ isFirstPersonMode: false })
         }
       },
+      isCalibrating: false,
+      setIsCalibrating: (calibrating) => {
+        set({ isCalibrating: calibrating })
+        if (!calibrating) set({ calibrationPoints: [] })
+      },
+      calibrationPoints: [],
+      setCalibrationPoints: (points) => set({ calibrationPoints: points }),
     }),
     {
       name: 'pascal-editor-ui-preferences',

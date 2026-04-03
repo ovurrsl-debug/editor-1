@@ -45,7 +45,10 @@ function formatMeasurement(value: number, unit: 'metric' | 'imperial') {
     if (inches === 12) return `${wholeFeet + 1}'0"`
     return `${wholeFeet}'${inches}"`
   }
-  return `${Number.parseFloat(value.toFixed(2))}m`
+  const mmVal = Math.round(value * 1000 * 1000) / 1000
+  const mm = mmVal.toFixed(3)
+  const meters = (Math.round(value * 10000) / 10000).toFixed(4)
+  return `${mm}mm (${meters}m)`
 }
 
 export function WallMeasurementLabel() {

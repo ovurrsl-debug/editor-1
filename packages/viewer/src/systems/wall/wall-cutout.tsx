@@ -78,22 +78,31 @@ function getMaterialsForWall(wallNode: WallNode): WallMaterials {
   }
 
   let userColor = '#ffffff'
-  if (wallNode.material?.properties?.color) {
-    userColor = wallNode.material.properties.color
+  let userRoughness = 1
+  let userMetalness = 0
+
+  if (wallNode.material?.properties) {
+    userColor = wallNode.material.properties.color ?? '#ffffff'
+    userRoughness = wallNode.material.properties.roughness ?? 1
+    userMetalness = wallNode.material.properties.metalness ?? 0
   } else if (wallNode.material?.preset && wallNode.material.preset !== 'custom') {
-    userColor = getPresetColor(wallNode.material.preset)
+    const presetColor = getPresetColor(wallNode.material.preset)
+    userColor = presetColor
+    // We could also get preset roughness/metalness here if needed
   }
 
   const visibleMat = new MeshStandardNodeMaterial({
     color: userColor,
-    roughness: 1,
-    metalness: 0,
+    roughness: userRoughness,
+    metalness: userMetalness,
   })
 
   const invisibleMat = new MeshStandardNodeMaterial({
     transparent: true,
     opacityNode: mix(float(0.0), float(0.24), dotPattern()),
     color: userColor,
+    roughness: userRoughness,
+    metalness: userMetalness,
     depthWrite: false,
     emissive: userColor,
   })
@@ -165,20 +174,10 @@ export const WallCutout = () => {
       currentWallIds.add(wallId)
 
       const hideWall = getWallHideState(wallNode, wallMesh as Mesh, wallMode, u)
+      const materials = getMaterialsForWall(wallNode)
 
-      if (shouldUpdate) {
-        const materials = getMaterialsForWall(wallNode)
+      if ((wallMesh as Mesh).material !== (hideWall ? materials.invisible : materials.visible)) {
         ;(wallMesh as Mesh).material = hideWall ? materials.invisible : materials.visible
-      } else {
-        const currentMaterial = (wallMesh as Mesh).material
-        const materials = wallMaterialCache.get(wallId)
-        if (
-          !materials ||
-          currentMaterial !== (hideWall ? materials.invisible : materials.visible)
-        ) {
-          const newMaterials = getMaterialsForWall(wallNode)
-          ;(wallMesh as Mesh).material = hideWall ? newMaterials.invisible : newMaterials.visible
-        }
       }
     })
 

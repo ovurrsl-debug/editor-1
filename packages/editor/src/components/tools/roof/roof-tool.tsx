@@ -206,8 +206,8 @@ export const RoofTool: React.FC = () => {
     const onGridClick = (event: GridEvent) => {
       if (!currentLevelId) return
 
-      const gridX = Math.round(event.position[0] * 2) / 2
-      const gridZ = Math.round(event.position[2] * 2) / 2
+      const gridX = Math.round(event.position[0] * 100) / 100
+      const gridZ = Math.round(event.position[2] * 100) / 100
       const y = event.position[1]
 
       if (corner1Ref.current) {

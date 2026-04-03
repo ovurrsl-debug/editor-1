@@ -372,9 +372,9 @@ export const CustomCameraControls = () => {
   return (
     <CameraControls
       makeDefault
-      maxDistance={100}
+      maxDistance={2000}
       maxPolarAngle={maxPolarAngle}
-      minDistance={10}
+      minDistance={1}
       minPolarAngle={0}
       mouseButtons={mouseButtons}
       onRest={onRest}

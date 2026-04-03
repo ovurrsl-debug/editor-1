@@ -1,3 +1,4 @@
+/// <reference types="@react-three/fiber" />
 'use client'
 
 import {
@@ -285,8 +286,12 @@ export const MoveRackTool: React.FC<{ node: RackNode }> = ({ node: movingRackNod
     // --- Floor Handlers (for Standard Variant) ---
     const onGridMove = (event: GridEvent | SlabEvent) => {
       if (isLibrary) return
-      const snapX = Math.round(event.position[0] * 10) / 10
-      const snapZ = Math.round(event.position[2] * 10) / 10
+      
+      const isFine = event.nativeEvent.ctrlKey || event.nativeEvent.metaKey
+      const snap = isFine ? 1000 : 100
+      
+      const snapX = Math.round(event.position[0] * snap) / snap
+      const snapZ = Math.round(event.position[2] * snap) / snap
       
       const prevParentId = currentParentId
       currentParentId = getLevelId()
@@ -305,8 +310,12 @@ export const MoveRackTool: React.FC<{ node: RackNode }> = ({ node: movingRackNod
 
     const onGridClick = (event: GridEvent | SlabEvent) => {
       if (isLibrary) return
-      const snapX = Math.round(event.position[0] * 10) / 10
-      const snapZ = Math.round(event.position[2] * 10) / 10
+      
+      const isFine = event.nativeEvent.ctrlKey || event.nativeEvent.metaKey
+      const snap = isFine ? 1000 : 100
+      
+      const snapX = Math.round(event.position[0] * snap) / snap
+      const snapZ = Math.round(event.position[2] * snap) / snap
       const levelId = getLevelId()
       if (!levelId) return
 

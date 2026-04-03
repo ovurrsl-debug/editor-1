@@ -65,6 +65,7 @@ export const RackNode = BaseNode.extend({
   // Yön & koridor
   layoutDir: z.enum(['v', 'h']).default('v'),
   corridorGap: z.number().default(5.0),      // Sıralar arası koridor boşluğu (m)
+  bayGap: z.number().default(0),             // Yan yana gözler (bay) arası boşluk (m)
 
   // Sırt sırta (back-to-back)
   backToBack: z.boolean().default(false),

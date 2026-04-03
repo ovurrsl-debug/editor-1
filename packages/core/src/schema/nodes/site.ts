@@ -26,10 +26,10 @@ export const SiteNode = BaseNode.extend({
     type: 'polygon',
     // Default 30x30 square centered at origin
     points: [
-      [-15, -15],
-      [15, -15],
-      [15, 15],
-      [-15, 15],
+      [-125, -150],
+      [125, -150],
+      [125, 150],
+      [-125, 150],
     ],
   }),
   // terrain: TerrainData,

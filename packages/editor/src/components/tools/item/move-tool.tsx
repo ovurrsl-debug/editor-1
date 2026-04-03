@@ -1,4 +1,4 @@
-import type { DoorNode, ItemNode, RoofNode, RoofSegmentNode, WindowNode } from '@pascal-app/core'
+import type { AnyNodeId, DoorNode, ItemNode, RoofNode, RoofSegmentNode, WallNode, WindowNode } from '@pascal-app/core'
 import { Vector3 } from 'three'
 import { sfxEmitter } from '../../../lib/sfx-bus'
 import useEditor from '../../../store/use-editor'
@@ -6,6 +6,7 @@ import { MoveDoorTool } from '../door/move-door-tool'
 import { MoveRoofTool } from '../roof/move-roof-tool'
 import { MoveWindowTool } from '../window/move-window-tool'
 import { MoveRackTool } from '../rack/move-rack-tool'
+import { MoveWallTool } from '../wall/move-wall-tool'
 import type { PlacementState } from './placement-types'
 import { useDraftNode } from './use-draft-node'
 import { usePlacementCoordinator } from './use-placement-coordinator'
@@ -14,7 +15,7 @@ function getInitialState(node: {
   asset: { attachTo?: string }
   parentId: string | null
 }): PlacementState {
-  const attachTo = node.asset.attachTo
+  const attachTo = (node as any).asset?.attachTo
   if (attachTo === 'wall' || attachTo === 'wall-side') {
     return { surface: 'wall', wallId: node.parentId, ceilingId: null, surfaceItemId: null }
   }
@@ -39,7 +40,7 @@ function MoveItemContent({ movingNode }: { movingNode: ItemNode }) {
     // Duplicates start fresh in floor mode; wall/ceiling draft is created lazily by ensureDraft
     initialState: isNew
       ? { surface: 'floor', wallId: null, ceilingId: null, surfaceItemId: null }
-      : getInitialState(movingNode),
+      : getInitialState(movingNode as any),
     // Preserve the original item's scale so Y-position calculations use the correct height
     defaultScale: isNew ? movingNode.scale : undefined,
     initDraft: (gridPosition) => {
@@ -73,6 +74,7 @@ export const MoveTool: React.FC = () => {
   const movingNode = useEditor((state) => state.movingNode)
 
   if (!movingNode) return null
+  if (movingNode.type === 'wall') return <MoveWallTool node={movingNode as WallNode} />
   if (movingNode.type === 'door' || movingNode.type === 'warehouse-door') return <MoveDoorTool node={movingNode as any} />
   if (movingNode.type === 'window') return <MoveWindowTool node={movingNode as WindowNode} />
   if (movingNode.type === 'roof' || movingNode.type === 'roof-segment')

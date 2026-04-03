@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "set -a && . ./.env 2>/dev/null; set +a; turbo run dev --env-mode=loose",
+    "dev": "dotenv -e .env -- turbo run dev --env-mode=loose",
     "lint": "biome lint",
     "lint:fix": "biome lint --write",
     "format": "biome format --write",
@@ -11,7 +11,7 @@
     "check": "biome check",
     "check:fix": "biome check --write",
     "check-types": "turbo run check-types",
-    "kill": "lsof -ti:3002 | xargs kill -9 2>/dev/null || echo 'No processes found on port 3002'",
+    "kill": "lsof -ti:3000 | xargs kill -9 2>/dev/null || echo 'No processes found on port 3000'",
     "release": "gh workflow run release.yml -f package=both -f bump=patch",
     "release:viewer": "gh workflow run release.yml -f package=viewer -f bump=patch",
     "release:core": "gh workflow run release.yml -f package=core -f bump=patch",

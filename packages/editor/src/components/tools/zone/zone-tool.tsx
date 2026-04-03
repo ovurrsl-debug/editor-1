@@ -175,8 +175,8 @@ export const ZoneTool: React.FC = () => {
       if (!cursorRef.current) return
 
       // Snap to 0.5 grid
-      const gridX = Math.round(event.position[0] * 2) / 2
-      const gridZ = Math.round(event.position[2] * 2) / 2
+      const gridX = event.position[0]
+      const gridZ = event.position[2]
       cursorPosition = [gridX, gridZ]
       levelYRef.current = event.position[1]
 
@@ -195,8 +195,8 @@ export const ZoneTool: React.FC = () => {
     const onGridClick = (event: GridEvent) => {
       if (!currentLevelId) return
 
-      const gridX = Math.round(event.position[0] * 2) / 2
-      const gridZ = Math.round(event.position[2] * 2) / 2
+      const gridX = event.position[0]
+      const gridZ = event.position[2]
       let clickPoint: [number, number] = [gridX, gridZ]
 
       // Snap to axis from last point

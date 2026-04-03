@@ -1,6 +1,7 @@
 import { Html } from '@react-three/drei'
 import type { ThreeElements } from '@react-three/fiber'
 import { forwardRef } from 'react'
+import * as THREE from 'three'
 import type { Group } from 'three'
 import { furnishTools } from '../../../components/ui/action-menu/furnish-tools'
 import { tools } from '../../../components/ui/action-menu/structure-tools'
@@ -39,29 +40,7 @@ export const CursorSphere = forwardRef<Group, CursorSphereProps>(function Cursor
     <group ref={ref} {...props} visible={isVisible}>
       {/* Flat marker on the ground */}
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        {/* Center dot */}
-        <mesh layers={EDITOR_LAYER} renderOrder={2}>
-          <circleGeometry args={[0.06, 32]} />
-          <meshBasicMaterial
-            color={color}
-            depthTest={false}
-            depthWrite={false}
-            opacity={0.9}
-            transparent
-          />
-        </mesh>
-
-        {/* Outer ring / glow */}
-        <mesh layers={EDITOR_LAYER} renderOrder={2}>
-          <circleGeometry args={[0.2, 32]} />
-          <meshBasicMaterial
-            color={color}
-            depthTest={false}
-            depthWrite={false}
-            opacity={0.25}
-            transparent
-          />
-        </mesh>
+        {/* Ring removed for clear view */}
       </group>
 
       {/* Vertical line */}

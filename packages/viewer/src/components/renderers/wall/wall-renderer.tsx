@@ -20,10 +20,14 @@ export const WallRenderer = ({ node }: { node: WallNode }) => {
     const mat = node.material
     if (!mat) return DEFAULT_WALL_MATERIAL
     return createMaterial(mat)
-  }, [node.material, node.material?.preset, node.material?.properties, node.material?.texture])
+  }, [node.material, node.material?.preset, JSON.stringify(node.material?.properties), node.material?.texture])
+
+  useLayoutEffect(() => {
+    useScene.getState().markDirty(node.id)
+  }, [node.id, node.material, node.material?.preset, JSON.stringify(node.material?.properties)])
 
   return (
-    <mesh castShadow receiveShadow ref={ref} visible={node.visible} material={material}>
+    <mesh ref={ref} visible={node.visible} material={material}>
       <boxGeometry args={[0, 0, 0]} />
       <mesh name="collision-mesh" visible={false} {...handlers}>
         <boxGeometry args={[0, 0, 0]} />

@@ -1,7 +1,7 @@
 import { type GuideNode, useRegistry } from '@pascal-app/core'
 import { useLoader } from '@react-three/fiber'
 import { Suspense, useMemo, useRef } from 'react'
-import { DoubleSide, type Group, type Texture, TextureLoader } from 'three'
+import { DoubleSide, type Group, type Texture, TextureLoader } from 'three/webgpu'
 import { float, texture } from 'three/tsl'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
 import { useAssetUrl } from '../../../hooks/use-asset-url'
@@ -62,8 +62,9 @@ const GuidePlane = ({ url, scale, opacity }: { url: string; scale: number; opaci
       material={material}
       raycast={() => {}}
       rotation={[-Math.PI / 2, 0, 0]}
+      position-y={0.01}
     >
-      <planeGeometry args={[width, height]} boundingBox={null} boundingSphere={null} />
+      <planeGeometry args={[width, height]} />
     </mesh>
   )
 }

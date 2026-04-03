@@ -1,4 +1,4 @@
-import { get, set } from 'idb-keyval'
+import { del, get, set } from 'idb-keyval'
 
 export const ASSET_PREFIX = 'asset_data:'
 
@@ -12,6 +12,23 @@ export async function saveAsset(file: File): Promise<string> {
   const id = crypto.randomUUID()
   await set(`${ASSET_PREFIX}${id}`, file)
   return `asset://${id}`
+}
+
+/**
+ * Delete a file from IndexedDB and revoke its object URL
+ */
+export async function deleteAsset(url: string): Promise<void> {
+  if (!url.startsWith('asset://')) return
+
+  const id = url.replace('asset://', '')
+  
+  // Revoke object URL from cache if it exists
+  if (urlCache.has(id)) {
+    URL.revokeObjectURL(urlCache.get(id)!)
+    urlCache.delete(id)
+  }
+
+  await del(`${ASSET_PREFIX}${id}`)
 }
 
 /**

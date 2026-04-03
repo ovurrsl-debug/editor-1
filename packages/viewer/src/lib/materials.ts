@@ -1,5 +1,5 @@
 import { type MaterialProperties, type MaterialSchema, resolveMaterial } from '@pascal-app/core'
-import * as THREE from 'three'
+import * as THREE from 'three/webgpu'
 
 const sideMap: Record<MaterialProperties['side'], THREE.Side> = {
   front: THREE.FrontSide,
@@ -8,14 +8,16 @@ const sideMap: Record<MaterialProperties['side'], THREE.Side> = {
 }
 
 const materialCache = new Map<string, THREE.MeshStandardMaterial>()
+const textureLoader = new THREE.TextureLoader()
 
-function getCacheKey(props: MaterialProperties): string {
-  return `${props.color}-${props.roughness}-${props.metalness}-${props.opacity}-${props.transparent}-${props.side}`
+function getCacheKey(props: MaterialProperties, textureUrl?: string): string {
+  return `${props.color}-${props.roughness}-${props.metalness}-${props.opacity}-${props.transparent}-${props.side}-${textureUrl ?? 'none'}`
 }
 
 export function createMaterial(material?: MaterialSchema): THREE.MeshStandardMaterial {
   const props = resolveMaterial(material)
-  const cacheKey = getCacheKey(props)
+  const textureUrl = material?.texture?.url
+  const cacheKey = getCacheKey(props, textureUrl)
 
   if (materialCache.has(cacheKey)) {
     return materialCache.get(cacheKey)!
@@ -29,6 +31,16 @@ export function createMaterial(material?: MaterialSchema): THREE.MeshStandardMat
     transparent: props.transparent,
     side: sideMap[props.side],
   })
+
+  if (textureUrl) {
+    const tex = textureLoader.load(textureUrl)
+    if (material?.texture?.repeat) {
+      tex.wrapS = THREE.RepeatWrapping
+      tex.wrapT = THREE.RepeatWrapping
+      tex.repeat.set(material.texture.repeat[0], material.texture.repeat[1])
+    }
+    threeMaterial.map = tex
+  }
 
   materialCache.set(cacheKey, threeMaterial)
   return threeMaterial

@@ -9,7 +9,10 @@ import {
   RoofSegmentNode,
   sceneRegistry,
   useScene,
+  WallNode,
   WindowNode,
+  RackNode,
+  WarehouseDoorNode,
 } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { Html } from '@react-three/drei'
@@ -20,8 +23,8 @@ import { sfxEmitter } from '../../lib/sfx-bus'
 import useEditor from '../../store/use-editor'
 import { NodeActionMenu } from './node-action-menu'
 
-const ALLOWED_TYPES = ['item', 'door', 'window', 'roof', 'roof-segment', 'wall', 'slab']
-const DELETE_ONLY_TYPES = ['wall', 'slab']
+const ALLOWED_TYPES = ['item', 'door', 'window', 'roof', 'roof-segment', 'wall', 'slab', 'rack', 'warehouse-door']
+const DELETE_ONLY_TYPES = ['slab']
 
 export function FloatingActionMenu() {
   const selectedIds = useViewer((s) => s.selection.selectedIds)
@@ -66,7 +69,10 @@ export function FloatingActionMenu() {
         node.type === 'window' ||
         node.type === 'door' ||
         node.type === 'roof' ||
-        node.type === 'roof-segment'
+        node.type === 'roof-segment' ||
+        node.type === 'rack' ||
+        node.type === 'warehouse-door' ||
+        node.type === 'wall'
       ) {
         setMovingNode(node as any)
       }
@@ -98,6 +104,12 @@ export function FloatingActionMenu() {
           duplicate = RoofNode.parse(duplicateInfo)
         } else if (node.type === 'roof-segment') {
           duplicate = RoofSegmentNode.parse(duplicateInfo)
+        } else if (node.type === 'rack') {
+          duplicate = RackNode.parse(duplicateInfo)
+        } else if (node.type === 'warehouse-door') {
+          duplicate = WarehouseDoorNode.parse(duplicateInfo)
+        } else if (node.type === 'wall') {
+          duplicate = WallNode.parse(duplicateInfo)
         }
       } catch (error) {
         console.error('Failed to parse duplicate', error)
@@ -105,9 +117,14 @@ export function FloatingActionMenu() {
       }
 
       if (duplicate) {
-        if (duplicate.type === 'door' || duplicate.type === 'window') {
+        if (
+          duplicate.type === 'door' ||
+          duplicate.type === 'window' ||
+          duplicate.type === 'warehouse-door' ||
+          duplicate.type === 'wall'
+        ) {
           useScene.getState().createNode(duplicate, duplicate.parentId as AnyNodeId)
-        } else if (duplicate.type === 'item') {
+        } else if (duplicate.type === 'item' || duplicate.type === 'rack') {
           useScene.getState().createNode(duplicate, duplicate.parentId as AnyNodeId)
         } else if (duplicate.type === 'roof' || duplicate.type === 'roof-segment') {
           // Add small offset to make it visible
@@ -144,7 +161,10 @@ export function FloatingActionMenu() {
           duplicate.type === 'window' ||
           duplicate.type === 'door' ||
           duplicate.type === 'roof' ||
-          duplicate.type === 'roof-segment'
+          duplicate.type === 'roof-segment' ||
+          duplicate.type === 'rack' ||
+          duplicate.type === 'warehouse-door' ||
+          duplicate.type === 'wall'
         ) {
           setMovingNode(duplicate as any)
         }
